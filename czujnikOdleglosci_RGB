@@ -1,0 +1,156 @@
+//MAGDALNEA LIPIEC, 2018
+//Czujnik odległosći (forbot)
+//Dioda RGB
+//Aplikacja realizuje pomiar odległości od czujnika do przedmiotu
+//Zmiana odległości sygnalizowana jest przez podłączoną do układu
+//diodę RGB
+
+#include <LiquidCrystal.h>    //załączenie biblioteki do wyświetlacza LCD
+#include <Adafruit_NeoPixel.h>     //załączenie biblioteki do diody programowalnej 
+Adafruit_NeoPixel linijka = Adafruit_NeoPixel(8, A0, NEO_GRB + NEO_KHZ800); //zainicjalizowanie działania diody
+
+#define trig 12   // zdefiniowanie pinu 12 pod nazwę trig
+#define echo 11 //zdefiniowanie pinu 11 pod nazwę 11
+int jasnosc=150;  //zadeklarowanie zmiennej jasnosc (wyświetlacz LCD)
+
+LiquidCrystal lcd(2,3,4,5,6,7); //informacja pod które piny na Arduino zostaje podłączony wyświetlacz
+
+void setup() {    //funkcja setup wykonująca się tylko 1 raz
+  Serial.begin(9600); //ustawienie prędkości komunikacji na 9600bps
+  pinMode(trig,OUTPUT);             //trig wysyła, ustawienie zmiennej trig jako wyjście
+  pinMode(echo,INPUT);              //echo odbiera, ustawienie zmiennej echo jako wyjście
+  lcd.begin(16,2);      //deklaracja typu wyświetlacza
+  lcd.clear();        
+  lcd.setCursor(0,0);    //ustawenie pozycji kursora na 0,0
+  lcd.print("odleglosc:");     //wyświetlenie tekstu
+  lcd.setCursor(0,1);   //ustawienie pozycji kursora na 0,1
+  lcd.print("     cm");   //wyświetlenie tekstu
+  analogWrite(9, jasnosc);  //na pinie 9 wysyłamy wartość PWM, który jest proporcjonalny do jasność
+
+  linijka.begin();      //inicjalizacja linijki
+  linijka.show();     
+}
+
+void loop() {
+ 
+ Serial.println(zmierzOdleglosc()); //wyświetlenie tekstu
+  lcd.setCursor(0,1);     //ustawienie pozycji kursora na 0,1
+  lcd.print("     ");     //wyświetlenie tekstu na LCD
+  lcd.setCursor(0,1);     //ustawienie pozycji kursora na 0,1
+  lcd.print(zmierzOdleglosc());   //wyświetlenie tekstu na LCD
+  zakres(370,400);      //wywolanie funkcji zakres i nadanie jej parametrów 370-400
+  delay(500);       //opóźnienie na pół sekundy
+
+  if((zmierzOdleglosc()>0)&&(zmierzOdleglosc()<=50)) {  //jeśli odległość w podanym zakresie to
+    linijka.setPixelColor(0, linijka.Color(0, 100, 56)); //dioda RGB ustawienie koloru i numer diody
+    linijka.show();       //pokazanie ustawionych wcześniej parametrow
+  
+    linijka.clear();        //usuwa pokazane parametry
+  }
+
+
+ if((zmierzOdleglosc()>50)&&(zmierzOdleglosc()<=100)) {
+   linijka.setPixelColor(1, linijka.Color(12, 49, 255)); //Dioda nr i świeci na wybrany kolor (R, G, B)
+   linijka.setPixelColor(0, linijka.Color(0, 100, 56));
+   linijka.show(); 
+       
+    linijka.clear();
+}
+
+ if((zmierzOdleglosc()>100)&&(zmierzOdleglosc()<=150)) {
+   linijka.setPixelColor(2, linijka.Color(69, 50, 24)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(1, linijka.Color(12, 49, 255)); //Dioda nr i świeci na wybrany kolor (R, G, B)
+   linijka.setPixelColor(0, linijka.Color(0, 100, 56));
+   linijka.show();
+       
+    linijka.clear(); 
+}
+
+ if((zmierzOdleglosc()>150)&&(zmierzOdleglosc()<=200)) {
+   linijka.setPixelColor(3, linijka.Color(65, 189, 222)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(2, linijka.Color(69, 50, 24)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(1, linijka.Color(12, 49, 255)); //Dioda nr i świeci na wybrany kolor (R, G, B)
+   linijka.setPixelColor(0, linijka.Color(0, 100, 56));
+   linijka.show(); 
+       
+    linijka.clear();
+}
+
+ if((zmierzOdleglosc()>200)&&(zmierzOdleglosc()<=250)) {
+   linijka.setPixelColor(4, linijka.Color(79, 255, 50)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(3, linijka.Color(65, 189, 222)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(2, linijka.Color(69, 50, 24)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(1, linijka.Color(12, 49, 255)); //Dioda nr i świeci na wybrany kolor (R, G, B)
+   linijka.setPixelColor(0, linijka.Color(0, 100, 56));
+   linijka.show(); 
+        
+    linijka.clear();
+}
+
+ if((zmierzOdleglosc()>250)&&(zmierzOdleglosc()<=300)) {
+   linijka.setPixelColor(5, linijka.Color(65, 220, 100)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(4, linijka.Color(79, 255, 50)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(3, linijka.Color(65, 189, 222)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(2, linijka.Color(69, 50, 24)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(1, linijka.Color(12, 49, 255)); //Dioda nr i świeci na wybrany kolor (R, G, B)
+   linijka.setPixelColor(0, linijka.Color(0, 100, 56));
+   linijka.show(); 
+        
+    linijka.clear();
+}
+
+ if((zmierzOdleglosc()>300)&&(zmierzOdleglosc()<=350)) {
+  linijka.setPixelColor(6, linijka.Color(255, 100, 189)); //Dioda nr i świeci na wybrany kolor
+  linijka.setPixelColor(5, linijka.Color(65, 220, 100));
+  linijka.setPixelColor(4, linijka.Color(79, 255, 50)); //Dioda nr i świeci na wybrany kolor
+  linijka.setPixelColor(3, linijka.Color(65, 189, 222)); //Dioda nr i świeci na wybrany kolor
+  linijka.setPixelColor(2, linijka.Color(69, 50, 24)); //Dioda nr i świeci na wybrany kolor
+  linijka.setPixelColor(1, linijka.Color(12, 49, 255)); //Dioda nr i świeci na wybrany kolor (R, G, B)
+  linijka.setPixelColor(0, linijka.Color(0, 100, 56));
+  linijka.show(); 
+       
+    linijka.clear();
+}
+
+ if((zmierzOdleglosc()>350)&&(zmierzOdleglosc()<=400)) {
+   linijka.setPixelColor(7, linijka.Color(255, 0, 0)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(6, linijka.Color(255, 100, 189)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(5, linijka.Color(65, 220, 100));
+   linijka.setPixelColor(4, linijka.Color(79, 255, 50)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(3, linijka.Color(65, 189, 222)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(2, linijka.Color(69, 50, 24)); //Dioda nr i świeci na wybrany kolor
+   linijka.setPixelColor(1, linijka.Color(12, 49, 255)); //Dioda nr i świeci na wybrany kolor (R, G, B)
+   linijka.setPixelColor(0, linijka.Color(0, 100, 56));
+   linijka.show();
+       
+    linijka.clear(); 
+}
+}
+
+int zmierzOdleglosc(){    //deklaracja funkcji zmierzOdleglosc
+    long czas,dystans;    //zadeklarowanie zmiennej czas i dystans
+  
+//trigger to wejście wyzwalające, gdy podamy na nie stan wysoki to rozpocznie się pomiar odległości i z wyjścia echo odczytamy zmierzoną odległość
+
+  digitalWrite(trig,LOW);   //ustawienie stanu niskiego na pinie trig, 
+  delayMicroseconds(2);   //opóźnienie
+  digitalWrite(trig, HIGH); //ustawienie stanu wysokiego na pinie trig
+  delayMicroseconds(10);  //opóźnienie
+  digitalWrite(trig,LOW);   //ustawienie stanu niskiego na pinie trig
+
+  czas=pulseIn(echo,HIGH);  //czas w jakim zmienna echo była w stanie wysokim
+  dystans=czas/58;    //podzielenie przez wartość 58, wynika to z czasu przez jaki dźwięk pokonuje odległość 1cm 
+  
+  if (dystans>400) dystans =400;  //jeśli dystans<400 to dystans = 400
+  return dystans;     //zwrot parametru z funkcji
+}
+
+void zakres(int a, int b){      //funkcja o nazwie zakres
+  int jakDaleko = zmierzOdleglosc();  //dystans
+  if ((jakDaleko >a) && (jakDaleko <b)){    //jeśli spełia zakres to
+    digitalWrite(8,HIGH);       //ustawienie stanu wysokiego na pinie numer 8
+  }
+  else{           //w innym przypadku
+    digitalWrite(8,LOW);        //ustawienie stanu niskiego na pinie numer 8
+  }
+}
