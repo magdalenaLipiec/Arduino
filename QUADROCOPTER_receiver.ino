@@ -1,5 +1,6 @@
 /*
  Bachelor Arduino Quadrocopter Project
+ DESIGN OF THE QUADROCOPTER CONTROL SYSTEM 
  by Magdalena Lipiec, AiR
  2019, Kielce Univeristy of Technology
 
