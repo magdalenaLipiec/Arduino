@@ -1,0 +1,19 @@
+//MAGDALENA LIPIEC. 2014
+//LCD setup
+
+#include <LiquidCrystal.h> //zalaczenie biblioteki do lcd
+LiquidCrystal lcd(2,3,4,5,6,7); //informacja o podlaczeniu nowego wyswietlacza
+
+void setup() {
+  lcd.begin(16,2); //deklaracja typu
+  lcd.setCursor(1,0);  //ustawienie kursora
+  lcd.print("Magdalena Lipiec -- mat-fiz");
+  lcd.setCursor(0,1);
+  lcd.print("");
+
+  
+}
+
+void loop() {
+
+}
