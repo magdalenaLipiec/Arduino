@@ -1,0 +1,37 @@
+//MAGDALENA LIPIEC
+//botland - thumb joystick z przyciskiem -- SparkFun
+//    VCC - Napięcie zasilania (od 3,3 V do 5 V).
+//    GND - Masa układu.
+//    VERT - Analogowe wyjście dla osi pionowej (w pozycji środkowej wartość równa połowie napięcia zasilania VCC/2).
+//   HORIZ - Analogowe wyjście dla osi poziomej (w pozycji środkowej wartość równa połowie napięcia zasilania VCC/2).
+//   SEL - Cyfrowy sygnał przycisku, w przypadku załączenia osiąga wartość GND, wyłączony - pozostaje niepodłączony (floating). W przypadku korzystania z przycisku należy włączyć wewnętrzny
+//   rezystor podciągający (pull-up) lub dołączyć zewnętrzny element.
+
+
+int axisX = 0;
+int axisY = 0;
+
+
+void setup() {
+
+  pinMode(3, OUTPUT); //dioda axisY [PWM]
+  pinMode(5, OUTPUT); //dioda axisX [PWM]
+  
+  Serial.begin(9600);
+  Serial.println("axisX \t axisY");
+}
+
+void loop() {
+
+  axisX = analogRead(A0); //odczyt analoga
+  axisY = analogRead(A1);
+  
+  Serial.print(axisX );
+  Serial.print(" \t");
+  Serial.println(axisY); 
+
+  analogWrite(3, axisY);  //sterowanie jasnoscia diody  axisY
+  analogWrite(5, axisX);  //sterowanie jasnoscia diody  axisX
+
+  delay(1000);
+}
