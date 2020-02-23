@@ -4,6 +4,7 @@
 //Aplikacja realizuje pomiar odległości od czujnika do przedmiotu
 //Zmiana odległości sygnalizowana jest przez podłączoną do układu
 //diodę RGB
+//odleglosc od badanego przedmiotu wyswietlana jest na wyswietlaczu LCD
 
 #include <LiquidCrystal.h>    //załączenie biblioteki do wyświetlacza LCD
 #include <Adafruit_NeoPixel.h>     //załączenie biblioteki do diody programowalnej 
