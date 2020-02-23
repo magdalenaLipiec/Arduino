@@ -1,0 +1,30 @@
+//MAGDALENA LIPIEC
+
+
+#include <LiquidCrystal.h> //zalaczenie biblioteki do lcd
+LiquidCrystal lcd(2,3,4,5,6,7); //informacja o podlaczeniu nowego wyswietlacza
+
+
+void setup() {
+  lcd.begin(16,2); //deklaracja typu
+  lcd.clear();
+  lcd.setCursor(0,0);  //ustawienie kursora
+  lcd.print("");
+  lcd.setCursor(0,1);
+  lcd.print("");
+  
+
+  //pinMode(12, INPUT_PULLUP);  //przycisk start
+  //pinMode(13, INPUT_PULLUP);  //przycisk stop
+}
+
+void loop() {
+
+ //while(digitalRead(12) == LOW) {  //jesli przycisk jest wcisniety
+  for(int i=1; i<=1000; i++) {
+   lcd.setCursor(0,0);
+   lcd.print(i);
+ //}
+    
+    delay(1000);
+  }
