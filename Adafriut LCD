@@ -1,0 +1,408 @@
+
+
+#include <Adafruit_GFX.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_ILI9341.h>
+#include <Adafruit_STMPE610.h>  //biblioteka od dotyku
+
+int ekran = 0;  //0-HOME; 1-START; 2-STOP //aktualny ekran
+int wartoscAnaloga = 0;
+
+int TopDirection = 1;  // 0=right, 1=left
+int baseVal = 120;
+
+int x_pos; //position along the graph x axis
+float y_pos_x; //current graph y axis position of X value
+float y_pos_x_old = 120; //old y axis position of X value
+byte x_scale = 1; //scale of graph x axis, controlled by touchscreen buttons
+byte y_scale = 1;
+
+boolean display1 = true;
+
+unsigned long time_since_last_reset = 0;
+int interval = 1000;  //ZMIANA CZASU TRWANIA POMIARU !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+#define TS_MINX 150
+#define TS_MINY 130
+#define TS_MAXX 3800
+#define TS_MAXY 4000
+
+#define STMPE_CS 8
+Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
+#define TFT_CS 10
+#define TFT_DC 9
+
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+
+//RAMKI
+#define FRAME_GX 10   //ramka START
+#define FRAME_RX 210  //ramka STOP
+#define FRAME_MX 120  //ramka SRODEK  
+#define FRAME_Y 180  
+#define FRAME_W 100
+#define FRAME_H 50
+
+//PRZYCISK START
+#define GREENBUTTON_X FRAME_GX
+#define GREENBUTTON_Y 180
+#define GREENBUTTON_W (FRAME_W)
+#define GREENBUTTON_H FRAME_H
+
+//PRZYCISK STOP
+#define REDBUTTON_X FRAME_RX   
+#define REDBUTTON_Y FRAME_Y
+#define REDBUTTON_W (FRAME_W)
+#define REDBUTTON_H FRAME_H
+
+//PRZYCISK SRODKOWY
+#define MBUTTON_X FRAME_MX   
+#define EDBUTTON_Y 180
+#define REDBUTTON_W (FRAME_W)
+#define REDBUTTON_H FRAME_H
+
+//RAMKA CZARNE POLE LICZNIK
+#define FRAME_X GREENBUTTON_X + 50   //ramka START 
+#define FRAME_Y GREENBUTTON_Y-140
+#define FRAME_W 100
+#define FRAME_H 50
+
+//CZARNE POLE OD LICZNIKA
+#define POLE_X GREENBUTTON_X + 50   
+#define POLE_Y GREENBUTTON_Y-140
+#define POLE_W 310
+#define POLE_H 170
+
+boolean RecordOn = true;
+
+
+
+void drawFrame()  { //funkcja do rysowania ramek od przyciskow
+  //rysuje prostokat; x,y - lewy górny rog; w-szerokosc; h-wysokosc
+  tft.drawRect(FRAME_GX, FRAME_Y, FRAME_W, FRAME_H, ILI9341_GREEN);  
+  tft.drawRect(FRAME_RX, FRAME_Y, FRAME_W, FRAME_H, ILI9341_RED);  
+}
+
+
+
+void startButton()  { //funkcja do przycisku START
+  //x,y-punkt startowy; w-dlugosc; h-szerokosc; kolor
+  tft.fillRect(GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H, ILI9341_GREEN);
+  tft.drawRect(FRAME_GX, FRAME_Y, FRAME_W, FRAME_H, ILI9341_GREEN);  
+  tft.setCursor(GREENBUTTON_X + 6 , GREENBUTTON_Y-35 + (GREENBUTTON_H));
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(3);
+  tft.println("START");
+  RecordOn = true;
+}
+
+
+
+void stopButton()  { //funkcja do przycisku STOP
+  //x,y-punkt startowy; w-dlugosc; h-szerokosc; kolor
+  tft.fillRect(REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H, ILI9341_RED); 
+  tft.drawRect(FRAME_RX, FRAME_Y, FRAME_W, FRAME_H, ILI9341_RED);
+  tft.setCursor(REDBUTTON_X + 17 , REDBUTTON_Y-35 + (REDBUTTON_H));
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(3);
+  tft.println("WROC");
+  RecordOn = true;
+}
+
+  
+
+void ekranHome() { //EKRAN 0
+  //NAPIS START
+  tft.fillScreen(ILI9341_BLACK);  //kolor backgroundu
+  tft.setRotation(1); //ekran poziomy; (1)-ekran pionowy
+
+  tft.fillRect(GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H, ILI9341_GREEN);
+  //tft.drawRect(FRAME_GX, FRAME_Y, FRAME_W, FRAME_H, ILI9341_GREEN);  
+  tft.setCursor(GREENBUTTON_X + 6 , GREENBUTTON_Y-35 + (GREENBUTTON_H));
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(3);
+  tft.println("START");
+  RecordOn = true;
+
+  tft.setCursor(GREENBUTTON_X + 20 , GREENBUTTON_Y-170);
+  tft.setTextColor(ILI9341_BLUE);
+  tft.setTextSize(3);
+  tft.println("Nacisnij START  aby zaczac pomiar");
+}
+
+
+
+void ekranSTOP() {  //EKRAN 2 //WYKRES
+  tft.fillScreen(ILI9341_BLACK);  //kolor backgroundu
+  tft.setRotation(1); //ekran poziomy; (1)-ekran pionowy
+
+  //PRZYCISK 'NOWY'
+  tft.fillRect(REDBUTTON_X-130, 10, REDBUTTON_W, REDBUTTON_H, ILI9341_RED);
+  tft.drawRect(FRAME_RX+-130, 10, FRAME_W, FRAME_H, ILI9341_RED);
+  tft.setCursor(REDBUTTON_X -115 , 10-35 + (REDBUTTON_H));
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(3);
+  tft.println("NOWY");
+  RecordOn = true;
+
+  /*//OSIE WYKRESU
+  tft.fillRect(11, 5, x_scale+1, 120, ILI9341_BLACK);
+  tft.fillRect(11, 121, x_scale+1, 119, ILI9341_BLACK);
+  
+  tft.drawFastVLine(10, 5, 220, ILI9341_WHITE); // os Y
+  tft.drawFastHLine(10, 220, 310, ILI9341_WHITE); // os X
+  
+  tft.setTextColor(ILI9341_YELLOW);
+  tft.setTextSize(1); // ustawienia do podpisania osi
+  
+  tft.setCursor(3, 220);
+  tft.print("0");  // zero w poczarku ukladu
+  tft.setCursor(3, 6);
+  tft.print("z"); // podpisanie osi Y
+  tft.setCursor(290, 230);
+  tft.print("t[ms]");  // zero w poczatku ukladu  //podpisanie osi X
+*/
+
+  //draw the graph objects
+  tft.fillRect(11, 5, x_scale+1, 120, ILI9341_BLACK);
+  tft.fillRect(11, 121, x_scale+1, 119, ILI9341_BLACK);
+  tft.drawFastVLine(10, 5, 230, ILI9341_WHITE); // y axis
+  tft.drawFastHLine(10, 120, 310, ILI9341_WHITE); // x axis
+  tft.setTextColor(ILI9341_YELLOW);
+  tft.setTextSize(1); // set parameters for y axis labels
+  tft.setCursor(3, 116);
+  tft.print("0");  // "0" at center of ya axis
+  tft.setCursor(3, 6);
+  tft.print("+"); // "+' at top of y axis
+  tft.setCursor(3, 228);
+  tft.print("-"); // "-" at bottom of y axis
+} //void ekranSTOP
+
+
+
+void ekranSTART()  {  //EKRAN 1
+  tft.fillScreen(ILI9341_BLACK);  //kolor backgroundu
+  tft.setRotation(1); //ekran poziomy; (1)-ekran pionowy
+
+  //NPAPIS STOP
+
+  RecordOn = true;
+  
+} //void ekranSTART
+
+
+
+void setup(void) {
+
+    Serial.begin(9600);
+  tft.begin();
+  if (!ts.begin()) { 
+    Serial.println("Unable to start touchscreen.");
+  } 
+  else { 
+    Serial.println("Touchscreen started."); 
+  }
+  tft.fillScreen(ILI9341_BLACK);  //kolor backgroundu
+  tft.setRotation(1); //ekran poziomy; (1)-ekran pionowy
+  ekranHome(); //wywolanie funkcji odpowiedzialnej za ekran glowny
+
+} //setup
+
+
+
+void loop() {
+
+  if (!ts.bufferEmpty()) {  //sprawdzenie dotyku
+  
+  TS_Point p = ts.getPoint(); //odzyskanie punktu
+  //skalowanie za pomoca kalibracji i ukladu wspolrzednych ratacyjnych
+  p.x = map(p.x, TS_MINY, TS_MAXY, 0, tft.height());
+  p.y = map(p.y, TS_MINX, TS_MAXX, 0, tft.width());
+  int y = tft.height() - p.x;
+  int x = p.y;
+
+
+
+if (RecordOn) {
+
+     if(ekran == 0)  { 
+      if((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
+      if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
+        
+          Serial.println("PRZYCISK START ZOSTAL WCISNIETY");
+
+          ekran = 1;
+          ekranSTART();
+
+              //LICZNIK CZASU
+              time_since_last_reset = millis();
+
+              while ((millis() - time_since_last_reset) < interval)  {
+              //DO ODLICZENIA CZASU ->  (millis() - time_since_last_reset) < interval  
+
+                  
+              //POMIAR ANALOGA
+              wartoscAnaloga = analogRead(A5);
+              Serial.println(wartoscAnaloga);
+
+
+//WYKRES_POCZATEK_3
+              tft.setRotation(1);
+              int y1 = wartoscAnaloga;
+              int y2;
+              
+              for (int x=1; x<10; x+=1){
+              y2 = map(wartoscAnaloga, 0, 1023,0,400); // map max analog read (1023) to max screensize (240)
+   
+              tft.drawLine(10, y1, 10+150, y2, ILI9341_YELLOW); // draw line between previous reading and current
+              //tft.drawLine(y1,10,y2,10+1,ILI9341_YELLOW); // draw line between previous reading and current
+
+              y1 = y2; // Make current reading previous
+ }
+//WYKRES_KONIEC_3
+
+              //WYKRES 2PROBA
+              //int wartoscAnaloga = 0; // used to hold sensor data
+              //int sensor1ValOld = 0; // holds previous value for line graph
+              //wartoscAnaloga = analogRead(A0);
+              //int sensor1Transposed = wartoscAnaloga;
+              //tft.setRotation(1);
+              //tft.drawLine(tft.width(), sensor1ValOld, tft.height(), wartoscAnaloga, ILI9341_GREEN);
+              //sensor1ValOld = wartoscAnaloga;
+
+                 // tft.drawLine(10, y_pos_x_old, 300, y_pos_x, ILI9341_GREEN); 
+                  //tft.drawLine(y_pos_x_old, -170, y_pos_x, 300, ILI9341_RED);
+                 
+                  //y_pos_x = wartoscAnaloga+120;
+                  //CODE FOR PLOTTING CONTINUOUS LINES!!!!!!!!!!!!
+                  //Plot "wartoscAnaloga" value
+                  //poczatkowa pozioma pozycja; poczatkowa pionowa pozycja; koncowa pozioma pozycja; koncowa pionowa pozycja; kolor linii
+                  //tft.drawLine(10, 170, 200, 50, ILI9341_GREEN);  
+                  //tft.drawLine(10, y_pos_x_old, 300, y_pos_x, ILI9341_GREEN); 
+                  //+tft.drawLine(y_pos_x_old, -170, y_pos_x, 300, ILI9341_RED);
+                  y_pos_x_old = y_pos_x; //set old y pos values to current y pos values
+
+//WYKRES SPOSOB 4 POCZATEK
+//for(int j=20;j<300;j=+0.1){
+ 
+  //    int wartoscAnaloga;
+    
+ 
+//      tft.drawPixel(j-1, 170-wartoscAnaloga, ILI9341_GREEN);
+ 
+ // }
+//wYKORES SPOSOB 4 KONIEC
+
+
+
+
+
+                  
+             
+                
+              //Serial.println("licze licze licze");
+              tft.setCursor(GREENBUTTON_X + 50 , GREENBUTTON_Y-150);
+              tft.setTextColor(ILI9341_BLUE);
+              tft.setTextSize(3);
+              tft.print("TRWA POMIAR");
+
+              tft.setCursor(GREENBUTTON_X+120  , GREENBUTTON_Y-110);
+              tft.setTextColor(ILI9341_BLUE);
+              tft.setTextSize(3);
+              tft.println(interval/1000);
+
+              tft.setCursor(GREENBUTTON_X+140  , GREENBUTTON_Y-110);
+              tft.setTextColor(ILI9341_BLUE);
+              tft.setTextSize(3);
+              tft.println("[s]");
+              
+              } //while licznik czasu
+              
+              Serial.println("POMIAR ZAKONCZONO!!!!!!!!!!!!!!!!!!!");
+              Serial.println(""); Serial.println("");
+              tft.setCursor(GREENBUTTON_X  , GREENBUTTON_Y-70);
+              tft.setTextColor(ILI9341_BLUE);
+              tft.setTextSize(3);
+              tft.println("POMIAR ZAKONCZONO");
+              //PRZYCISK PRZEJSCIE DO WYKRESU
+              tft.fillRect(MBUTTON_X, 180, REDBUTTON_W, REDBUTTON_H, ILI9341_RED); 
+              tft.drawRect(FRAME_MX, 180, FRAME_W, FRAME_H, ILI9341_RED);
+              tft.setCursor(MBUTTON_X + 17 , 180-35 + (REDBUTTON_H));
+              tft.setTextColor(ILI9341_WHITE);
+              tft.setTextSize(3);
+              tft.println("PLOT");
+          
+
+       }  //if x
+       }  //if y
+    }     //if ekran0
+
+      if (ekran == 1) {
+       if((x > MBUTTON_X) && (x < (MBUTTON_X + REDBUTTON_W))) {
+       if ((y > 180) && (y <= (180 + REDBUTTON_H))) {
+        
+   Serial.println("PRZYCISK START ZOSTAL WCISNIETY");
+
+   ekran = 2;
+   ekranSTOP();
+
+
+
+   
+//  wyswietlenie wartosci z analoga niby
+  //wartoscAnaloga = analogRead(A0);
+  //tft.setTextColor(ILI9341_WHITE); //Actually Print all values!
+  //tft.setTextSize(1);
+ // tft.setCursor(25, 220); tft.print(wartoscAnaloga); tft.print(" ");
+
+//WYKRES  1proba
+    //y_pos_x = wartoscAnaloga+120;
+    //CODE FOR PLOTTING CONTINUOUS LINES!!!!!!!!!!!!
+    //Plot "wartoscAnaloga" value
+    //poczatkowa pozioma pozycja; poczatkowa pionowa pozycja; koncowa pozioma pozycja; koncowa pionowa pozycja; kolor linii
+   // tft.drawLine(10, 170, 200, 50, ILI9341_GREEN);  
+    
+    //tft.drawLine(10, y_pos_x_old, 300, y_pos_x, ILI9341_GREEN); 
+    //y_pos_x_old = y_pos_x; //set old y pos values to current y pos values
+//KONIEC WYKRESU
+
+//WYKRES 2PROBA
+//int wartoscAnaloga = 0; // used to hold sensor data
+//int sensor1ValOld = 0; // holds previous value for line graph
+//wartoscAnaloga = analogRead(A0);
+//int sensor1Transposed = wartoscAnaloga;
+//tft.setRotation(1);
+//tft.drawLine(120, wartoscAnaloga, 170, wartoscAnaloga, ILI9341_GREEN);
+//sensor1ValOld = wartoscAnaloga;
+//KONIEC WYKRESU
+
+       }  //if x
+       }  //if y
+      }   //if ekran1
+
+
+      if (ekran == 2) {
+       if((x > REDBUTTON_X - 130) && (x < ((REDBUTTON_X - 130)+ REDBUTTON_W))) {
+       if ((y > 10) && (y <= (10 + REDBUTTON_H))) {
+        
+   Serial.println("PRZYCISK START ZOSTAL WCISNIETY");
+
+   ekran = 0;
+   ekranHome();
+  
+      } //if ekran0
+      } //if x
+     }  //if y
+  
+else //Record is off (RecordOn == false)
+{    
+  Serial.print("RecordOn == false");
+}
+
+ Serial.println(RecordOn);
+} //recordOn
+
+
+ }  //if buffer empty
+} //loop
