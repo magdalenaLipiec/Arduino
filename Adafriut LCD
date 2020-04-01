@@ -1,4 +1,8 @@
+//MAGDALENA LIPIEC, 2018
 
+
+
+//ANALOG 4 I 5 ZAJETE!  
 
 #include <Adafruit_GFX.h>
 #include <SPI.h>
@@ -206,7 +210,6 @@ void setup(void) {
   tft.fillScreen(ILI9341_BLACK);  //kolor backgroundu
   tft.setRotation(1); //ekran poziomy; (1)-ekran pionowy
   ekranHome(); //wywolanie funkcji odpowiedzialnej za ekran glowny
-
 } //setup
 
 
@@ -294,13 +297,6 @@ if (RecordOn) {
  // }
 //wYKORES SPOSOB 4 KONIEC
 
-
-
-
-
-                  
-             
-                
               //Serial.println("licze licze licze");
               tft.setCursor(GREENBUTTON_X + 50 , GREENBUTTON_Y-150);
               tft.setTextColor(ILI9341_BLUE);
@@ -406,3 +402,7 @@ else //Record is off (RecordOn == false)
 
  }  //if buffer empty
 } //loop
+
+
+
+
