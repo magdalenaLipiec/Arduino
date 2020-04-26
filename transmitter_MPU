@@ -1,0 +1,156 @@
+/*
+MAGDALENA LIPIEC
+NADAJNIK
+VCC - 3.3
+GND
+CSN - 
+CE - 
+MOSI - 
+SCK - 
+IRQ - XXX
+MISO -
+******MPU**** 
+*SDA -a5
+*SCL - a4
+*/
+
+
+#include <SparkFunMPU9250-DMP.h>
+#include <SPI.h>
+
+#include <RF24.h>
+//#define SerialPort SerialUSB
+#include <nRF24L01.h>
+#include <RF24.h>
+MPU9250_DMP imu;
+
+float pitch;
+float roll;
+float yaw;
+  float accelX;
+  float accelY;
+  float accelZ;
+  float gyroX;
+  float gyroY;
+  float gyroZ;
+  float magX;
+  float magY;
+  float magZ;
+
+//***********************congif nrf****************
+RF24 radio(9, 10); // CE, CSN  
+const byte address[6] = "00001";     //Byte of array representing the address. This is the address where we will send the data. This should be same on the receiving side.
+
+struct Data_Package {
+  
+  byte sendPitch;
+  byte sendRoll;
+  byte sendYaw;
+byte sendVal;
+};
+
+Data_Package data;
+//***********************congif nrf****************
+
+void setup() 
+{
+  Serial.begin(9600);
+
+//****************************NRF************************************
+
+  radio.begin();
+  radio.openWritingPipe(address);
+  radio.setAutoAck(true); //bylo false
+  radio.setDataRate(RF24_250KBPS);
+  radio.setPALevel(RF24_PA_LOW);        //This sets the module as transmitter
+
+
+//****************************MPU************************************
+  if (imu.begin() != INV_SUCCESS)
+  {
+    while (1)
+    {
+      Serial.println("Unable to communicate with MPU-9250");
+      Serial.println("Check connections, and try again.");
+      Serial.println();
+      delay(5000);
+    }
+  }
+
+  imu.setSensors(INV_XYZ_GYRO | INV_XYZ_ACCEL | INV_XYZ_COMPASS);
+  imu.setGyroFSR(250); // Set gyro to 2000 dps //bylo 2000
+  imu.setAccelFSR(2); // Set accel to +/-2g
+  imu.setLPF(10); // Set LPF corner frequency to 5Hz //bylo 5
+  imu.setSampleRate(10); // Set sample rate to 10Hz
+  imu.setCompassSampleRate(50); // Set mag rate to 10Hz //bylo 10
+}
+
+void loop() 
+{
+
+//****************************MPU************************************
+  if ( imu.dataReady() )
+  {
+    imu.update(UPDATE_ACCEL | UPDATE_GYRO | UPDATE_COMPASS);
+  accelX = imu.calcAccel(imu.ax);
+  accelY = imu.calcAccel(imu.ay);
+  accelZ = imu.calcAccel(imu.az);
+  gyroX = imu.calcGyro(imu.gx);
+  gyroY = imu.calcGyro(imu.gy);
+  gyroZ = imu.calcGyro(imu.gz);
+  magX = imu.calcMag(imu.mx);
+  magY = imu.calcMag(imu.my);
+  magZ = imu.calcMag(imu.mz);
+  
+//  Serial.println("Accel: " + String(accelX) + ", " +
+//              String(accelY) + ", " + String(accelZ) + " g");
+//  Serial.println("Gyro: " + String(gyroX) + ", " +
+//              String(gyroY) + ", " + String(gyroZ) + " dps");
+//  Serial.println("Mag: " + String(magX) + ", " +
+//              String(magY) + ", " + String(magZ) + " uT");
+//  Serial.println("Time: " + String(imu.time) + " ms");
+//  
+//  Serial.println();
+
+ pitch = atan(accelX / sqrt(accelY * accelY + accelZ * accelZ)) * 180 / 3.14;
+
+roll = atan(accelY / sqrt(accelX * accelX + accelZ * accelZ)) * 180 / 3.14;
+
+//yaw
+   float Yh = (magY * cos(roll)) - (magZ * sin(roll));
+   float Xh = (magX * cos(pitch))+(magY * sin(roll)*sin(pitch)) + (magZ * cos(roll) * sin(pitch));
+
+ yaw =  atan2(Yh, Xh);
+  }
+
+//****************************NRF************************************
+    data.sendPitch = map(pitch,-90,90,0,255);
+    data.sendRoll = map(roll,-90,90,0,255);
+    data.sendYaw = map(yaw,-90,90,0,255);
+      data.sendVal = analogRead(A1);
+
+radio.write(&data, sizeof(Data_Package));
+
+
+
+
+//WYSWIETLENIE WARTOSCI
+//Serial.print(pitch);
+//Serial.print("   ");
+//Serial.print(roll);
+//Serial.print("   ");
+//Serial.print(yaw);
+//Serial.println("   ");
+
+
+//WYSWIETLENIE WARTOSCI
+Serial.print(data.sendPitch);
+Serial.print("   ");
+Serial.print(data.sendRoll);
+Serial.print("   ");
+Serial.print(data.sendYaw);
+Serial.println("   ");
+//Serial.print(data.sendVal);
+//Serial.println("   ");
+
+}//end loop
