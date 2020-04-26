@@ -1,0 +1,82 @@
+#include <SPI.h> 
+#include <RF24.h>
+#include "printf.h"
+
+RF24 radio(9,10);
+
+const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
+
+struct Data_Package {
+  
+  byte sendX;  //kontrola wysokosci
+};
+Data_Package data;
+
+void setup(void)
+{
+  Serial.begin(9600);
+  printf_begin();
+
+  radio.begin();
+
+ radio.setPALevel(RF24_PA_LOW);
+ radio.setChannel(0x4c);
+
+    radio.openWritingPipe(pipes[1]);
+    radio.openReadingPipe(1,pipes[0]);
+
+
+  //
+  // Start listening
+  //
+  // if( radio.setDataRate( RF24_250KBPS ) ) {
+  //   printf( "Data rate 250KBPS set!\n\r" ) ;
+  // } else {
+  //   printf( "Data rate 250KBPS set FAILED!!\n\r" ) ;
+  // }
+  // radio.setDataRate( RF24_2MBPS ) ;
+  // radio.setPALevel( RF24_PA_MAX ) ;
+  radio.enableDynamicPayloads() ;
+  radio.setAutoAck( true ) ;
+  radio.powerUp() ;
+  radio.startListening();
+
+  radio.printDetails();
+}
+
+void loop(void)
+{
+  
+    // if there is data ready
+    if ( radio.available() )
+    {
+//      // Dump the payloads until we've gotten everything
+//      unsigned long got_time;
+//      bool done = false;
+//      while (!done)
+//      {
+//        // Fetch the payload, and see if this was the last one.
+//        done = radio.read( &got_time, sizeof(unsigned long) );
+//      }
+//
+//      // First, stop listening so we can talk
+//      radio.stopListening();
+//
+//      // Send the final one back. This way, we don't delay
+//      // the reply while we wait on serial i/o.
+//      radio.write( &got_time, sizeof(unsigned long) );
+//      printf("Sent response %lu\n\r", got_time);
+//
+//      // Now, resume listening so we catch the next packets.
+
+      int num;
+      radio.startListening();
+
+
+    radio.read(&data, sizeof(Data_Package)); // Read the whole data and store it into the 'data' structure
+
+      int x = data.sendX;
+      Serial.println(x);
+    }
+  
+}
