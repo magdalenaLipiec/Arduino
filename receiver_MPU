@@ -1,0 +1,80 @@
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+RF24 radio(9, 10); // CE, CSN
+const byte address[6] = "00001";
+unsigned long lastReceiveTime = 0;
+unsigned long currentTime = 0;
+
+struct Data_Package {
+  
+  byte sendPitch;
+  byte sendRoll;
+  byte sendYaw;
+  byte sendVal;
+
+};
+
+
+Data_Package data; //utworz zmienna o powyzszej strukturze
+
+void setup() {
+
+Serial.begin(9600);
+
+  radio.begin();
+  radio.openReadingPipe(0, address);
+  radio.setAutoAck(false);
+  radio.setDataRate(RF24_250KBPS);
+  radio.setPALevel(RF24_PA_MIN);
+  radio.startListening();                    //This sets the module as receiver
+}
+
+void loop()
+{
+
+    currentTime = millis();
+  if ( currentTime - lastReceiveTime > 1000 ) { // If current time is more then 1 second since we have recived the last data, that means we have lost connection
+    Serial.println("LOST CONNECTION");
+  }
+  // Check whether there is data to be received
+  if (radio.available()) {
+    radio.read(&data, sizeof(Data_Package)); // Read the whole data and store it into the 'data' structure
+    lastReceiveTime = millis(); // At this moment we have received the data
+  }
+
+  
+
+
+// float pitch = map(data.sendPitch,0,255,0,90);  
+// float roll = map(data.sendRoll,0,255,0,90);  
+// float yaw = map(data.sendYaw,0,255,0,90);   
+float pitch = data.sendPitch;
+float roll = data.sendRoll;
+float yaw = data.sendYaw;
+
+float val = data.sendVal;
+
+   
+//WYSWIETLENIE WARTOSCI
+Serial.print(pitch);
+Serial.print("   ");
+Serial.print(roll);
+Serial.print("   ");
+Serial.print(yaw);
+Serial.println("   ");
+
+//Serial.print(data.sendVal);
+//Serial.println("   ");
+
+}
+
+void resetData() {
+  // Reset the values when there is no radio connection - Set initial default values
+ // data.throttle = 127;
+//  data.yaw = 127;
+ // data.pitch = 127;
+ // data.roll = 127;
+
+}
